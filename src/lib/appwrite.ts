@@ -1,4 +1,4 @@
-import { Account, Client, Databases, ID, Query } from 'appwrite';
+import { Account, Client, Databases, ID, Permission, Query, Role } from 'appwrite';
 
 export const appwriteConfig = {
   endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT,
@@ -12,7 +12,17 @@ export const appwriteConfig = {
   followsTableId: import.meta.env.VITE_APPWRITE_FOLLOWS_TABLE_ID || 'wish_follows',
 };
 
-export const isDemoMode = import.meta.env.VITE_APPWRITE_MODE !== 'live';
+export const appwriteMode = import.meta.env.VITE_APPWRITE_MODE === 'live' ? 'live' : 'demo';
+export const isDemoMode = appwriteMode !== 'live';
+
+const requiredLiveConfig = ['endpoint', 'projectId', 'databaseId', 'profilesTableId', 'wishesTableId', 'stepsTableId', 'updatesTableId', 'helpTableId', 'followsTableId'] as const;
+export const appwriteConfigError =
+  appwriteMode === 'live'
+    ? requiredLiveConfig
+        .filter((key) => !appwriteConfig[key])
+        .map((key) => `Missing VITE_APPWRITE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`)
+        .join('; ')
+    : '';
 
 export const appwriteClient = new Client()
   .setEndpoint(appwriteConfig.endpoint || 'http://localhost/v1')
@@ -21,4 +31,4 @@ export const appwriteClient = new Client()
 export const account = new Account(appwriteClient);
 export const databases = new Databases(appwriteClient);
 
-export { ID, Query };
+export { ID, Permission, Query, Role };
