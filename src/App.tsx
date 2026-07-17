@@ -117,8 +117,13 @@ export function App() {
 export function HomePage() {
   const [filter, setFilter] = useState("New");
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   useEffect(() => {
-    void api.listExplore(filter).then(setWishes);
+    void api.listExplore(filter).then((next) => {
+      setWishes(next);
+      setError("");
+    }).catch((err) => setError(err instanceof Error ? err.message : "Could not load wishes")).finally(() => setLoading(false));
   }, [filter]);
   return (
     <>
@@ -145,6 +150,9 @@ export function HomePage() {
           ))}
         </div>
       </section>
+      {loading && <p className="empty">Loading open wishes…</p>}
+      {error && <p className="error">{error}</p>}
+      {!loading && !error && !wishes.length && <p className="empty">No public wishes yet.</p>}
       <div className="wish-grid">
         {wishes.map((wish) => (
           <WishCard key={wish.id} wish={wish} />
@@ -259,10 +267,14 @@ export function MyWishlistPage() {
   const { user } = useWishlistOutlet();
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [profile, setProfile] = useState<Profile>();
+  const [error, setError] = useState("");
   useEffect(() => {
     if (user) {
-      void api.myWishes(user.id).then(setWishes);
-      void api.profile(user.id).then(setProfile);
+      void api.myWishes(user.id).then((next) => {
+        setWishes(next);
+        setError("");
+      }).catch((err) => setError(err instanceof Error ? err.message : "Could not load your wishes"));
+      void api.profile(user.id).then(setProfile).catch(() => undefined);
     }
   }, [user]);
   if (!user) return <AuthNudge />;
@@ -287,6 +299,7 @@ export function MyWishlistPage() {
           Add a wish
         </Link>
       </div>
+      {error && <p className="error">{error}</p>}
       <div className="wish-list">
         {wishes.map((w) => (
           <div className="manage-row" key={w.id}>
@@ -340,7 +353,7 @@ export function WishEditor() {
             ? b.steps
             : [{ title: "", status: "planned", stepType: "action" }],
         );
-      });
+      }).catch((err) => setError(err instanceof Error ? err.message : "Could not load wish"));
   }, [slug]);
   if (!user) return <AuthNudge />;
   const currentUser = user;
@@ -517,6 +530,7 @@ export function WishPage() {
   const [bundle, setBundle] = useState<WishBundle | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   const shareUrl = useMemo(
     () => `${location.origin}/w/${bundle?.wish.slug || slug || ""}`,
     [bundle, slug],
@@ -529,11 +543,14 @@ export function WishPage() {
     if (slug)
       void api.bundle(slug).then((next) => {
         if (!ignore) setBundle(next);
+      }).catch((err) => {
+        if (!ignore) setError(err instanceof Error ? err.message : "Could not load wish");
       });
     return () => {
       ignore = true;
     };
   }, [slug]);
+  if (error) return <p className="error">{error}</p>;
   if (!bundle) return <p className="empty">Loading wish…</p>;
   const { wish, steps, updates, offers, follows } = bundle;
   async function share() {
@@ -549,8 +566,13 @@ export function WishPage() {
       setNotice("Sign in to follow");
       return;
     }
-    await api.follow(wish, user);
-    await load();
+    try {
+      await api.follow(wish, user);
+      await load();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Could not update follow");
+      return;
+    }
     setNotice(
       follows.some((f) => f.userId === user.id)
         ? "Follow removed"
@@ -659,11 +681,17 @@ function OfferModal({
   const [message, setMessage] = useState("");
   const [type, setType] = useState<OfferType>("help");
   const [contact, setContact] = useState("");
+  const [error, setError] = useState("");
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     if (!user) return;
-    await api.offer(wish, user, type, message, contact);
-    onDone();
+    try {
+      await api.offer(wish, user, type, message, contact);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send offer");
+    }
   }
   return (
     <div className="modal-backdrop">
@@ -702,6 +730,7 @@ function OfferModal({
               onChange={(e) => setContact(e.target.value)}
               placeholder="Optional contact URL"
             />
+            {error && <p className="error">{error}</p>}
             <button className="button primary">Send offer</button>
           </>
         )}
@@ -714,18 +743,24 @@ export function ProfilePage() {
   const { user } = useWishlistOutlet();
   const [profile, setProfile] = useState<Partial<Profile>>({ offerTags: [] });
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   useEffect(() => {
     if (user)
       void api.profile(user.id).then((p) => {
         if (p) setProfile(p);
-      });
+      }).catch(() => undefined);
   }, [user]);
   if (!user) return <AuthNudge />;
   const currentUser = user;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await api.saveProfile(profile, currentUser);
-    setNotice("Profile saved");
+    setError("");
+    try {
+      await api.saveProfile(profile, currentUser);
+      setNotice("Profile saved");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save profile");
+    }
   }
   return (
     <section className="panel">
@@ -776,6 +811,7 @@ export function ProfilePage() {
           }
         />
         {notice && <p className="success">{notice}</p>}
+        {error && <p className="error">{error}</p>}
         <button className="button primary">Save profile</button>
       </form>
     </section>
