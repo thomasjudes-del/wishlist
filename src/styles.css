@@ -735,3 +735,245 @@ p {
     gap: 14px;
   }
 }
+
+/* Mobile-only refinements for 320px–430px without changing desktop composition. */
+.site-header,
+.site-header a,
+.site-header button,
+.button,
+.filters,
+.filters button,
+.actions,
+.eyebrow,
+.wish-card span,
+.path span,
+.demo-status {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.site-header a,
+.site-header button,
+.button,
+.filters button,
+.eyebrow,
+.wish-card span,
+.path span,
+.demo-status {
+  white-space: nowrap;
+}
+.wish-card h2,
+.wish-card p:not(.eyebrow),
+.path li b,
+.path li p,
+.public-wish h1,
+.public-wish p,
+.form input,
+.form textarea,
+.modal textarea {
+  overflow-wrap: anywhere;
+}
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .app-shell {
+    padding: 0 16px max(32px, env(safe-area-inset-bottom));
+  }
+  .site-header {
+    min-height: 56px;
+    margin: 0 -16px 4px;
+    padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+  }
+  .desktop-nav {
+    display: none !important;
+  }
+  .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 1rem;
+  }
+  .mobile-nav {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+  .mobile-menu {
+    position: relative;
+  }
+  .mobile-menu summary {
+    min-height: 44px;
+    list-style: none;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 14px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .mobile-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(260px, calc(100vw - 32px));
+    display: grid;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .mobile-menu-panel a,
+  .mobile-menu-panel button,
+  .demo-status {
+    min-height: 44px;
+    justify-content: flex-start;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    padding: 10px 12px;
+    color: var(--text);
+    font-weight: 700;
+    box-shadow: none;
+  }
+  .demo-status {
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .hero {
+    gap: 12px;
+    padding: 18px 0 14px;
+  }
+  .hero .button {
+    display: none;
+  }
+  .hero h1 {
+    max-width: 12ch;
+    font-size: clamp(2.25rem, 9.4vw, 2.5rem);
+    line-height: 1.02;
+    margin-bottom: 4px;
+  }
+  .section-head.explore-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0 12px;
+  }
+  .explore-head h2 {
+    margin: 0;
+  }
+  .filters {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 4px;
+    overflow: hidden;
+  }
+  .filters button {
+    min-height: 44px;
+    flex: 1 1 0;
+    padding: 0 8px;
+    font-size: 0.92rem;
+  }
+  .wish-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .wish-card img {
+    aspect-ratio: 16/10;
+  }
+  .wish-card div {
+    padding: 12px;
+  }
+  .wish-card h2 {
+    font-size: 1.18rem;
+    line-height: 1.14;
+    margin-bottom: 6px;
+  }
+  .wish-card p:not(.eyebrow) {
+    margin-bottom: 10px;
+  }
+  .public-wish {
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .public-wish > img {
+    aspect-ratio: 16/10;
+  }
+  .public-wish .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .public-wish .actions > * {
+    width: 100%;
+    min-height: 44px;
+  }
+  .step-edit {
+    grid-template-columns: 32px minmax(0, 1fr) minmax(112px, 0.55fr);
+  }
+  .step-edit select {
+    grid-column: 2 / 4;
+  }
+  .step-edit button {
+    grid-column: auto;
+    min-height: 44px;
+  }
+  .step-edit button:nth-of-type(1) {
+    grid-column: 2 / 4;
+  }
+  .modal-backdrop {
+    align-items: end;
+    place-items: end center;
+    padding: 16px 8px max(8px, env(safe-area-inset-bottom));
+  }
+  .modal {
+    width: 100%;
+    max-height: min(86svh, 720px);
+    border-radius: 22px 22px 12px 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-shell {
+    padding-inline: 16px;
+  }
+  .site-header {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  h1 {
+    font-size: clamp(2rem, 9vw, 2.4rem);
+  }
+  .public-wish h1 {
+    font-size: clamp(2rem, 9vw, 2.35rem);
+  }
+  .columns {
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .columns > div,
+  .columns aside,
+  .panel,
+  .profile-strip {
+    padding: 16px;
+  }
+}

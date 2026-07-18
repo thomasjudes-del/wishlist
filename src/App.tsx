@@ -75,13 +75,14 @@ export function App() {
     await api.signOut();
     setUser(null);
   }
+  const authLabel = user ? "Sign out" : "Sign in";
   return (
     <div className="app-shell">
       <header className="site-header">
         <Link className="brand" to="/">
           Wishlist
         </Link>
-        <nav>
+        <nav className="desktop-nav" aria-label="Primary navigation">
           {api.demoMode && (
             <button
               className="demo-badge"
@@ -106,6 +107,27 @@ export function App() {
             </Link>
           )}
         </nav>
+        <div className="mobile-nav">
+          <Link className="button primary icon-button" to="/wish/new" aria-label="Add a wish">
+            +
+          </Link>
+          <details className="mobile-menu">
+            <summary aria-label="Open menu">Menu</summary>
+            <div className="mobile-menu-panel">
+              <Link to="/">Explore</Link>
+              <Link to="/mine">My Wishlist</Link>
+              <Link to="/profile">Profile</Link>
+              {user ? (
+                <button onClick={() => void signOut()}>{authLabel}</button>
+              ) : (
+                <Link to="/auth">{authLabel}</Link>
+              )}
+              <span className="demo-status">
+                Demo status: {api.demoMode ? "On" : "Off"}
+              </span>
+            </div>
+          </details>
+        </div>
       </header>
       <main>
         <Outlet context={{ user, setUser }} />
