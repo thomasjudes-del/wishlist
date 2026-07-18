@@ -1,0 +1,51 @@
+name: Setup Appwrite Schema
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-appwrite:
+    name: Provision Appwrite schema
+    runs-on: ubuntu-latest
+    env:
+      APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+      APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          missing=0
+
+          if [ -z "$APPWRITE_ENDPOINT" ]; then
+            echo "::error::Missing required repository secret: APPWRITE_ENDPOINT"
+            missing=1
+          fi
+
+          if [ -z "$APPWRITE_PROJECT_ID" ]; then
+            echo "::error::Missing required repository secret: APPWRITE_PROJECT_ID"
+            missing=1
+          fi
+
+          if [ -z "$APPWRITE_API_KEY" ]; then
+            echo "::error::Missing required repository secret: APPWRITE_API_KEY"
+            missing=1
+          else
+            echo "::add-mask::$APPWRITE_API_KEY"
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required Appwrite secrets are missing. Add them in repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Provision Appwrite database schema
+        run: node scripts/setup-appwrite-live.mjs
