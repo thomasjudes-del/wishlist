@@ -33,7 +33,7 @@ Do not set API keys as `VITE_` variables. API keys are server/admin credentials 
 
 ## 3. Database and tables
 
-Create database ID `wishlist`. Create these tables/collections with **Document security enabled** and table-level create permission `users`:
+Create database ID `wishlist`. Create these TablesDB tables with **Row security enabled** and table-level create permission `users`:
 
 - `profiles`
 - `wishes`
@@ -42,7 +42,7 @@ Create database ID `wishlist`. Create these tables/collections with **Document s
 - `help_offers`
 - `wish_follows`
 
-## 4. Attributes
+## 4. Columns
 
 ### `profiles`
 
@@ -117,11 +117,11 @@ Run from a trusted admin machine, not the browser bundle:
 ```bash
 APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1 \
 APPWRITE_PROJECT_ID=your-project-id \
-APPWRITE_API_KEY=server-api-key-with-database-scope \
+APPWRITE_API_KEY=server-api-key-with-tablesdb-schema-scopes \
 node scripts/setup-appwrite-live.mjs
 ```
 
-The script creates the database, tables, attributes, and indexes using the IDs above. It treats already-existing resources as success. Never commit or expose `APPWRITE_API_KEY`.
+The script creates the TablesDB database, tables, columns, and indexes using the IDs above. It treats already-existing resources as success. Never commit or expose `APPWRITE_API_KEY`.
 
 ## 8. Live verification checklist
 
