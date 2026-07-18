@@ -11,37 +11,66 @@ const tableIds = {
   help: process.env.APPWRITE_HELP_TABLE_ID || process.env.VITE_APPWRITE_HELP_TABLE_ID || 'help_offers',
   follows: process.env.APPWRITE_FOLLOWS_TABLE_ID || process.env.VITE_APPWRITE_FOLLOWS_TABLE_ID || 'wish_follows',
 };
+
 if (!endpoint || !project || !key) {
   console.error('Set APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, and APPWRITE_API_KEY. Do not use API keys in frontend VITE_ variables.');
   process.exit(1);
 }
+
 const baseUrl = endpoint.replace(/\/$/, '');
 const headers = { 'Content-Type': 'application/json', 'X-Appwrite-Project': project, 'X-Appwrite-Key': key };
+const databasePath = `/tablesdb/${encodeURIComponent(databaseId)}`;
+const tablePath = (tableId) => `${databasePath}/tables/${encodeURIComponent(tableId)}`;
+const columnPath = (tableId, key) => `${tablePath(tableId)}/columns/${encodeURIComponent(key)}`;
+const indexPath = (tableId, key) => `${tablePath(tableId)}/indexes/${encodeURIComponent(key)}`;
+
 async function request(path, init = {}) {
+  const method = init.method || 'GET';
   const res = await fetch(`${baseUrl}${path}`, { ...init, headers: { ...headers, ...(init.headers || {}) } });
   const text = await res.text();
-  const body = text ? JSON.parse(text) : {};
-  if (res.status === 409) return { existed: true, body };
-  if (!res.ok) throw new Error(`${init.method || 'GET'} ${path} failed: ${res.status} ${text}`);
-  return { existed: false, body };
+  let body = {};
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = text;
+    }
+  }
+  return { method, path, status: res.status, ok: res.ok, text, body };
 }
-async function createResource(label, path, body) {
-  const result = await request(path, { method: 'POST', body: JSON.stringify(body) });
-  console.log(`${result.existed ? 'Already present' : 'Created'} ${label}`);
-  return result.body;
+
+function fail(label, response) {
+  console.error(`Failed ${label}`);
+  throw new Error(`${response.method} ${response.path} failed: ${response.status} ${response.text}`);
 }
+
+async function getOrCreate(label, getPath, postPath, body) {
+  const existing = await request(getPath);
+  if (existing.status === 200) {
+    console.log(`Already present ${label}`);
+    return existing.body;
+  }
+  if (existing.status !== 404) fail(label, existing);
+
+  const created = await request(postPath, { method: 'POST', body: JSON.stringify(body) });
+  if (!created.ok) fail(label, created);
+  console.log(`Created ${label}`);
+  return created.body;
+}
+
 const tableName = (key) => key.replace(/^./, (x) => x.toUpperCase()).replace(/s$/, key === 'profiles' || key === 'wishes' ? 's' : '');
-const tablePath = (tableId) => `/tablesdb/${encodeURIComponent(databaseId)}/tables/${encodeURIComponent(tableId)}`;
-async function database() { await createResource(`database ${databaseId}`, '/tablesdb', { databaseId, name: 'Wishlist', enabled: true }); }
-async function table(id, name) { await createResource(`table ${id}`, `/tablesdb/${encodeURIComponent(databaseId)}/tables`, { tableId: id, name, permissions: ['create("users")'], rowSecurity: true, enabled: true }); }
-async function column(tableId, kind, key, required, extra = {}) { await createResource(`column ${tableId}.${key}`, `${tablePath(tableId)}/columns/${kind}`, { key, required, ...extra }); }
-async function idx(tableId, key, type, columns, orders) { await createResource(`index ${tableId}.${key}`, `${tablePath(tableId)}/indexes`, { key, type, columns, orders }); }
+async function database() { await getOrCreate(`database ${databaseId}`, databasePath, '/tablesdb', { databaseId, name: 'Wishlist', enabled: true }); }
+async function table(id, name) { await getOrCreate(`table ${id}`, tablePath(id), `${databasePath}/tables`, { tableId: id, name, permissions: ['create("users")'], rowSecurity: true, enabled: true }); }
+async function column(tableId, kind, key, required, extra = {}) { await getOrCreate(`column ${tableId}.${key}`, columnPath(tableId, key), `${tablePath(tableId)}/columns/${kind}`, { key, required, ...extra }); }
+async function idx(tableId, key, type, columns, orders) { await getOrCreate(`index ${tableId}.${key}`, indexPath(tableId, key), `${tablePath(tableId)}/indexes`, { key, type, columns, orders }); }
 const string = (t, key, required, size = 255, array = false) => column(t, 'string', key, required, { size, array });
 const datetime = (t, key, required) => column(t, 'datetime', key, required);
 const bool = (t, key, required, xdefault) => column(t, 'boolean', key, required, { default: xdefault });
 const integer = (t, key, required) => column(t, 'integer', key, required);
+
 await database();
 for (const [keyName, id] of Object.entries(tableIds)) await table(id, tableName(keyName));
+
 const columns = [
   [string,tableIds.profiles,'user_id',true], [string,tableIds.profiles,'display_name',true], [string,tableIds.profiles,'avatar_url',false,2048], [string,tableIds.profiles,'location',false], [string,tableIds.profiles,'bio',false,2000], [string,tableIds.profiles,'offers_text',false,4000], [string,tableIds.profiles,'offer_tags',false,64,true], [string,tableIds.profiles,'contact_email',false], [string,tableIds.profiles,'contact_whatsapp',false], [string,tableIds.profiles,'contact_url',false,2048], [datetime,tableIds.profiles,'created_at',true], [datetime,tableIds.profiles,'updated_at',true],
   [string,tableIds.wishes,'owner_id',true], [string,tableIds.wishes,'owner_name',true], [string,tableIds.wishes,'title',true,180], [string,tableIds.wishes,'slug',true], [string,tableIds.wishes,'description',true,4000], [string,tableIds.wishes,'image_url',false,2048], [string,tableIds.wishes,'visibility',true], [string,tableIds.wishes,'status',true], [string,tableIds.wishes,'location',false], [datetime,tableIds.wishes,'target_date',false], [bool,tableIds.wishes,'accepts_help',true,true], [datetime,tableIds.wishes,'created_at',true], [datetime,tableIds.wishes,'updated_at',true],
@@ -51,8 +80,10 @@ const columns = [
   [string,tableIds.follows,'wish_id',true], [string,tableIds.follows,'user_id',true], [datetime,tableIds.follows,'created_at',true],
 ];
 for (const [fn, ...args] of columns) await fn(...args);
+
 console.log('Waiting for Appwrite to finish processing columns before creating indexes...');
 await new Promise((r) => setTimeout(r, 5000));
+
 const indexes = [
   [tableIds.profiles,'user_id_unique','unique',['user_id']],
   [tableIds.wishes,'owner_id','key',['owner_id']], [tableIds.wishes,'slug_unique','unique',['slug']], [tableIds.wishes,'visibility_updated_at','key',['visibility','updated_at'],['ASC','DESC']], [tableIds.wishes,'status_updated_at','key',['status','updated_at'],['ASC','DESC']],
@@ -62,4 +93,5 @@ const indexes = [
   [tableIds.follows,'wish_id_user_id_unique','unique',['wish_id','user_id']], [tableIds.follows,'user_id','key',['user_id']],
 ];
 for (const args of indexes) await idx(...args);
+
 console.log('Wishlist Appwrite TablesDB schema is present. Re-run safely if a resource already existed. Required scopes: databases.write, tables.write, columns.write, indexes.write.');
